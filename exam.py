@@ -1,66 +1,27 @@
 import streamlit as st
-import fitz  # PyMuPDF
 import zipfile
-import io
-from openai import OpenAI
+import os
+from utils import extract_texts_from_zip, generate_future_questions
 
-# === CONFIG ===
-client = OpenAI(api_key="YOUR_OPENAI_API_KEY")  # Replace with your OpenAI key
+st.set_page_config(page_title="Future Question Generator", layout="wide")
 
-st.set_page_config(page_title="🧠 Future Exam Question Generator", layout="wide")
-st.title("📚 Future Exam Question Generator")
-st.write("Upload a `.zip` file containing **past year papers (PDFs)** to generate fresh exam questions using ChatGPT.")
+st.title("🧠 Future-Year Question Generator")
+st.markdown("Upload a `.zip` of past year questions and generate possible future questions.")
 
-# === Extract text from each PDF ===
-def extract_text_from_pdf(pdf_bytes):
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
+uploaded_file = st.file_uploader("Upload a .zip file of question papers", type="zip")
 
-# === Generate Questions using GPT ===
-def generate_questions(text, subject="General", num_questions=5):
-    prompt = f"""
-You are an experienced exam setter for {subject}. Based on the content below from past year papers, generate {num_questions} original and challenging future exam questions (do not copy). 
+if uploaded_file:
+    with open("uploaded.zip", "wb") as f:
+        f.write(uploaded_file.read())
 
-Only return the numbered questions.
+    with zipfile.ZipFile("anl.zip", "r") as zip_ref:
+        zip_ref.extractall("extracted_papers")
 
-Content:
-{text[:3000]}  # limit to avoid exceeding token limit
-"""
-    completion = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return completion.choices[0].message.content
+    all_text = extract_texts_from_zip("extracted_papers")
+    st.success("Files extracted and content loaded!")
 
-# === Upload ZIP ===
-uploaded_zip = st.file_uploader("📤 Upload ZIP file of PDFs", type="zip")
-
-if uploaded_zip:
-    zip_bytes = io.BytesIO(uploaded_zip.read())
-    with zipfile.ZipFile(zip_bytes, "r") as zip_ref:
-        pdf_files = [f for f in zip_ref.namelist() if f.endswith(".pdf")]
-
-        if not pdf_files:
-            st.error("❌ No PDFs found in the ZIP file.")
-        else:
-            st.success(f"✅ Found {len(pdf_files)} PDF(s). Processing...")
-            all_text = ""
-
-            for file in pdf_files:
-                st.write(f"📄 Extracting from: `{file}`")
-                pdf_bytes = zip_ref.read(file)
-                text = extract_text_from_pdf(pdf_bytes)
-                all_text += f"\n=== From {file} ===\n{text}\n"
-
-            # Optionally: let user enter subject & number of questions
-            subject = st.text_input("📘 Subject of the papers", value="Math")
-            num_questions = st.slider("🔢 Number of questions to generate", 1, 20, 5)
-
-            if st.button("✨ Generate Future Exam Questions"):
-                with st.spinner("Generating..."):
-                    questions = generate_questions(all_text, subject, num_questions)
-                st.markdown("## 🧾 Generated Questions")
-                st.text_area("🧠 Questions", questions, height=400)
+    if st.button("✨ Generate Future Questions"):
+        with st.spinner("Generating..."):
+            future_questions = generate_future_questions(all_text)
+        st.subheader("🔮 Future-Year Style Questions")
+        st.write(future_questions)
