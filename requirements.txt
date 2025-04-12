@@ -1,9 +1,5 @@
-pip
 streamlit>=1.33.0
-pymupdf>=1.23.0
+pymupdf>=1.23.0        # Use this instead of 'fitz'
 openai>=1.14.0
-fitz
-pypdf
-os
-PyPDF2
-
+python-docx            # Add this if you want to support .docx files
+PyPDF2                 # Optional: if using PyPDF2 instead of pymupdf
