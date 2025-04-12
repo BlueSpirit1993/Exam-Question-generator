@@ -14,7 +14,7 @@ if uploaded_file:
     with open("uploaded.zip", "wb") as f:
         f.write(uploaded_file.read())
 
-    with zipfile.ZipFile("anl.zip", "r") as zip_ref:
+    with zipfile.ZipFile("uploaded.zip", "r") as zip_ref:
         zip_ref.extractall("extracted_papers")
 
     all_text = extract_texts_from_zip("extracted_papers")
