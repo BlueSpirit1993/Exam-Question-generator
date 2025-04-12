@@ -1,3 +1,4 @@
+pip
 streamlit>=1.33.0
 pymupdf>=1.23.0
 openai>=1.14.0
